@@ -1,9 +1,11 @@
 //#include <QCoreApplication>
 #include <stdio.h>
-#include <QString>
-#include <QTextStream>
-#include <QStringList>
-#include <QList>
+//#include <QString>
+//#include <QTextStream>
+//#include <QStringList>
+//#include <QList>
+#include <QtCore>
+#include <QVector>
 
 /*pos legend:
  *
@@ -28,13 +30,13 @@
 struct word
 {
     QString wdata;
-    char vform=0;
-    char ncase=0;
-    char pos=0;
-    char cnt=0;
-    char prep=0;
-    char conj=0;
-    bool capital=0;
+    char vform;
+    char ncase;
+    char pos;
+    char cnt;
+    char prep;
+    char conj;
+    bool capital;
 
 };
 
@@ -47,47 +49,40 @@ struct node
     node *parent;
 };
 
-word getprop(QString inword);
+word getprop(QString);
 char getpos(QString);
-char getvform(QString dat);
-char getncase(QString dat);
-char getcnt(QString dat);
+char getvform(QString);
+char getncase(QString);
+char getcnt(QString);
 char prepdetect(QString);
-char maketree(QStringList *list, node *root);
-char conjdetect(QString dat);
+char findsubj(QVector<word> *, QVector<word> *);
+char conjdetect(QString);
+void makewordlist(QStringList *, QVector<word> *);
+void makewordtree(QString sentence, QList<node> *);
+
 QTextStream in (stdin);
 QTextStream out (stdout);
 
 int main(int argc, char *argv[])
 {
-
-    QStringList wordlist;
-
-    QString insentence;
-
+    QString sentence;
+    QList<node> tree;
     if(argc<2)
     {
 
         do
         {
-            insentence = in.readLine();
-        } while (insentence.isNull());
+            sentence = in.readLine();
+        } while (sentence.isNull());
     }
     else
     {
-        insentence=*argv;
+        sentence=*argv;
     }
 
-    wordlist=insentence.split(QRegExp("\\s+"));
-    for(int i=0;i<wordlist.size();i++)
-    {
-        if(wordlist[i]=="")
-        {
-            wordlist.removeAt(i);
-        }
-    }
-    node sentree;
-    maketree(&wordlist,&sentree);
+
+    makewordtree(sentence, &tree);
+
 
   //  for (int i = 0;i<wordlist.size();i++)
    // {
@@ -97,6 +92,60 @@ int main(int argc, char *argv[])
    //out << (sentence + "ololo"+ "\n");
 
     return 0;
+}
+
+void makewordtree(QString sentence, QList<node> *tree)
+{
+    QStringList wordlist;
+
+    wordlist=sentence.split(QRegExp("\\s+"));  // SPLIT INCOMING STRING
+    for(int i=0;i<wordlist.size();i++)
+    {
+        if(wordlist[i]=="")
+        {
+            wordlist.removeAt(i);
+        }
+    }
+
+    QVector<word> tmpl; // MAKE LIST OF PREPARED WORD STRUCTURES
+    int i;
+    makewordlist(&wordlist,&tmpl);
+
+    QVector<word> subj; // find subjects, then add them to the tree
+
+    if(findsubj(&tmpl, &subj))
+    {
+      //root->data=tmpl[i];
+      out<< "subjects of sentence are: \n";
+      for(int i=0;i<subj.size();i++)
+      {
+          out<<subj[i].wdata + "\n";
+      }
+    }
+    else
+    {
+        out<<"No subject found \n";
+    }
+
+
+
+    //here we'll search for an ajective(s?)
+
+    //if no- preposition before subject and word(s?) before it.
+
+    // it will be the root's child (definition)
+
+
+}
+
+void makewordlist(QStringList *list, QVector<word> *tmpl)
+{
+    word tmpn;
+    for(int e=0;e!=list->size();e++) // make list of word structures
+    {
+        tmpn=getprop(list->at(e));
+        tmpl->append(tmpn);
+    }
 }
 
 word getprop(QString inword)
@@ -111,7 +160,7 @@ word getprop(QString inword)
     tmp.prep=prepdetect(inword);
     if(!tmp.prep)
     {
-        tmp.conj=prepdetect(inword);
+        tmp.conj=conjdetect(inword);
         if(!tmp.conj)
         {
             tmp.pos=getpos(inword);
@@ -300,43 +349,31 @@ char prepdetect(QString dat)
 
 }
 
-char maketree(QStringList *list, node *root)
+char findsubj(QVector<word> *tmpl, QVector<word> *subj)
 {
 
-    QList<word> tmpl;
-    word tmpn;
-
-    for(int e=0;e!=list->size();e++) // make list of word structures
+  /*  for(int i=0; i!=tmpl->size();i++) // find subject
     {
-        tmpn=getprop(list->at(e));
-        tmpl.append(tmpn);
+        if(tmpl[i]->pos=='n' && tmpl[i]->ncase=='s') //find noun
+        {
+            subj->append(*tmpl[i]);
+        }
+    }
+*/
+    for(int i=0; i!=tmpl->size();i++)
+    {
+        if(tmpl->at(i).pos=='n' && tmpl->at(i).ncase=='s')
+        {
+            subj->append(tmpl->at(i));
+        }
     }
 
-    int i;
-   // int g;
-    //int y=tmpl.size();
-    for(i=0; i!=tmpl.size() && !(tmpl[i].pos=='n' && tmpl[i].ncase=='s');i++);
-
-    // find noun in simple case as subject
-    if(i<tmpl.size())
+    if(subj->size())
     {
-      root->data=tmpl[i];
-      out<< "subject of sentence is: " + root->data.wdata + "\n";
+        return 1;
     }
     else
     {
-        out<<"No subject found \n";
+        return 0;
     }
-
-
-
-    //here we'll search for an ajective(s?)
-
-    //if no- preposition before subject and word(s?) before it.
-
-    // it will be the root's child (definition)
-
-
-
-    return 1;
 }
