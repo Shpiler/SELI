@@ -6,6 +6,7 @@
 //#include <QList>
 #include <QtCore>
 #include <QVector>
+#include "../tree.hh"
 
 /*pos legend:
  *
@@ -25,7 +26,7 @@
  *
 */
 
-#define MAXCHILD 4
+
 
 struct word
 {
@@ -44,10 +45,10 @@ struct node
 {
     word data;
     char parenttype;
-    char childtype[MAXCHILD];
-    node *child[MAXCHILD];
-    node *parent;
+    QList<char> childtype;
 };
+
+
 
 word getprop(QString);
 char getpos(QString);
@@ -58,7 +59,7 @@ char prepdetect(QString);
 char findsubj(QVector<word> *, QVector<word> *);
 char conjdetect(QString);
 void makewordlist(QStringList *, QVector<word> *);
-void makewordtree(QString sentence, QList<node> *);
+void makewordtree(QString sentence, tree<node> *);
 
 QTextStream in (stdin);
 QTextStream out (stdout);
@@ -66,7 +67,9 @@ QTextStream out (stdout);
 int main(int argc, char *argv[])
 {
     QString sentence;
-    QList<node> tree;
+    tree<node> sentree;
+    QVector<tree<node>::iterator> nodelist;
+
     if(argc<2)
     {
 
@@ -81,7 +84,7 @@ int main(int argc, char *argv[])
     }
 
 
-    makewordtree(sentence, &tree);
+    makewordtree(sentence, &sentree);
 
 
   //  for (int i = 0;i<wordlist.size();i++)
@@ -94,7 +97,7 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void makewordtree(QString sentence, QList<node> *tree)
+void makewordtree(QString sentence, tree<node> *tree, QVector<tree<node>::iterator> *nodelist)
 {
     QStringList wordlist;
 
@@ -108,7 +111,7 @@ void makewordtree(QString sentence, QList<node> *tree)
     }
 
     QVector<word> tmpl; // MAKE LIST OF PREPARED WORD STRUCTURES
-    int i;
+
     makewordlist(&wordlist,&tmpl);
 
     QVector<word> subj; // find subjects, then add them to the tree
