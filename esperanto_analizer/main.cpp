@@ -33,6 +33,7 @@ struct word
     char pos=0;
     char cnt=0;
     char prep=0;
+    char conj=0;
     bool capital=0;
 
 };
@@ -53,6 +54,7 @@ char getncase(QString dat);
 char getcnt(QString dat);
 char prepdetect(QString);
 char maketree(QStringList *list, node *root);
+char conjdetect(QString dat);
 QTextStream in (stdin);
 QTextStream out (stdout);
 
@@ -109,9 +111,13 @@ word getprop(QString inword)
     tmp.prep=prepdetect(inword);
     if(!tmp.prep)
     {
-        tmp.pos=getpos(inword);
-        tmp.vform=getvform(inword);
-        tmp.ncase=getncase((inword));
+        tmp.conj=prepdetect(inword);
+        if(!tmp.conj)
+        {
+            tmp.pos=getpos(inword);
+            tmp.vform=getvform(inword);
+            tmp.ncase=getncase(inword);
+        }
     }
 
     return tmp;
@@ -182,6 +188,39 @@ char getncase(QString dat)
         return 'n';
     }
     else return 's';
+}
+
+char conjdetect(QString dat)
+{
+
+    char t=1;
+    if(dat=="kaj"){return t;}
+    t++;
+    if(dat=="sed"){return t;}
+    t++;
+    if(dat=="aŭ"){return t;}
+    t++;
+    if(dat=="ĉar"){return t;}
+    t++;
+    if(dat=="ĉu"){return t;}
+    t++;
+    if(dat=="do"){return t;}
+    t++;
+    if(dat=="ja"){return t;}
+    t++;
+    if(dat=="ke"){return t;}
+    t++;
+    if(dat=="kvankam"){return t;}
+    t++;
+    if(dat=="kvazaŭ"){return t;}
+    t++;
+    if(dat=="nek"){return t;}
+    t++;
+    if(dat=="se"){return t;}
+    t++;
+    if(dat=="tamen"){return t;}
+    return 0;
+
 }
 
 char prepdetect(QString dat)
