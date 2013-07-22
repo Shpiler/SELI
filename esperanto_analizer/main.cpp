@@ -30,22 +30,23 @@
 
 struct word
 {
-    QString wdata;
-    char vform;
-    char ncase;
-    char pos;
-    char cnt;
-    char prep;
-    char conj;
-    bool capital;
+    QString wdata ="";
+    char vform =0;
+    char ncase=0;
+    char pos=0;
+    char cnt=0;
+    char prep=0;
+    char conj=0;
+    char pron=0;
+    bool capital=0;
 
 };
 
 struct node
 {
     word data;
-    char parenttype;
-    QList<char> childtype;
+    char parenttype=0;
+    QByteArray childtype;
 };
 
 
@@ -58,8 +59,9 @@ char getcnt(QString);
 char prepdetect(QString);
 char findsubj(QVector<word> *, QVector<word> *);
 char conjdetect(QString);
+char prondetect(QString);
 void makewordlist(QStringList *, QVector<word> *);
-void makewordtree(QString sentence, tree<node> *);
+void makewordtree(QString, tree<node> *);
 
 QTextStream in (stdin);
 QTextStream out (stdout);
@@ -68,7 +70,7 @@ int main(int argc, char *argv[])
 {
     QString sentence;
     tree<node> sentree;
-    QVector<tree<node>::iterator> nodelist;
+//    QVector<tree<node>::iterator> nodelist;
 
     if(argc<2)
     {
@@ -97,17 +99,33 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-void makewordtree(QString sentence, tree<node> *tree, QVector<tree<node>::iterator> *nodelist)
+void makewordtree(QString sentence, tree<node> *tr)
 {
     QStringList wordlist;
+    tree<node>::iterator root;
+    node tmp;
+   // tree<node>::iterator *subject;
+    root=tr->begin(); // top of our tree
+    root=tr->insert(root,tmp);
 
     wordlist=sentence.split(QRegExp("\\s+"));  // SPLIT INCOMING STRING
-    for(int i=0;i<wordlist.size();i++)
+
+    for(int i=0;i<wordlist.size();i++) //clear incoming data
     {
         if(wordlist[i]=="")
         {
             wordlist.removeAt(i);
         }
+        else
+        {
+            wordlist[i].remove('.');
+            wordlist[i].remove(',');
+            wordlist[i].remove('\"');
+            wordlist[i].remove('!');
+            wordlist[i].remove('?'); // ===================================HERETISM!!! DO SOMETHIG ELSE WITH THOSE SIGNS!!!!
+        }
+
+
     }
 
     QVector<word> tmpl; // MAKE LIST OF PREPARED WORD STRUCTURES
@@ -122,6 +140,8 @@ void makewordtree(QString sentence, tree<node> *tree, QVector<tree<node>::iterat
       out<< "subjects of sentence are: \n";
       for(int i=0;i<subj.size();i++)
       {
+          tmp.data=subj[i];
+          tr->append_child(root,tmp);
           out<<subj[i].wdata + "\n";
       }
     }
@@ -166,9 +186,13 @@ word getprop(QString inword)
         tmp.conj=conjdetect(inword);
         if(!tmp.conj)
         {
-            tmp.pos=getpos(inword);
-            tmp.vform=getvform(inword);
-            tmp.ncase=getncase(inword);
+            tmp.pron=prondetect(inword);
+            if(!tmp.pron)
+            {
+                tmp.pos=getpos(inword);
+                tmp.vform=getvform(inword);
+                tmp.ncase=getncase(inword);
+            }
         }
     }
 
@@ -181,7 +205,7 @@ char getpos(QString dat)
     {
         return 'v';
     }
-    if(dat.at(dat.size()-1)=='o' || dat.mid(dat.size()-2,2)=="oj")
+    if(dat.at(dat.size()-1)=='o' || dat.mid(dat.size()-2,2)=="oj" || dat.mid(dat.size()-2,2)=="on" || dat.mid(dat.size()-3,3)=="ojn")
     {
         return 'n';
     }
@@ -275,6 +299,33 @@ char conjdetect(QString dat)
 
 }
 
+char prondetect(QString dat)
+{
+
+    char t=1;
+    if(dat=="mi"){return t;}
+    t++;
+    if(dat=="ci"){return t;}
+    t++;
+    if(dat=="li"){return t;}
+    t++;
+    if(dat=="ŝi"){return t;}
+    t++;
+    if(dat=="ĝi"){return t;}
+    t++;
+    if(dat=="ni"){return t;}
+    t++;
+    if(dat=="vi"){return t;}
+    t++;
+    if(dat=="ili"){return t;}
+    t++;
+    if(dat=="mem"){return t;}
+    t++;
+    if(dat=="oni"){return t;}
+    return 0;
+
+}
+
 char prepdetect(QString dat)
 {
     char t=1;
@@ -355,17 +406,9 @@ char prepdetect(QString dat)
 char findsubj(QVector<word> *tmpl, QVector<word> *subj)
 {
 
-  /*  for(int i=0; i!=tmpl->size();i++) // find subject
-    {
-        if(tmpl[i]->pos=='n' && tmpl[i]->ncase=='s') //find noun
-        {
-            subj->append(*tmpl[i]);
-        }
-    }
-*/
     for(int i=0; i!=tmpl->size();i++)
     {
-        if(tmpl->at(i).pos=='n' && tmpl->at(i).ncase=='s')
+        if((tmpl->at(i).pos=='n' && tmpl->at(i).ncase=='s') ||tmpl->at(i).pron)
         {
             subj->append(tmpl->at(i));
         }
